@@ -1,2 +1,2 @@
 say hi red
-say bye red
+say bye re
