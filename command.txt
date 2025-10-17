@@ -1,1 +1,1 @@
-kill redstonekid1000
+say hi
