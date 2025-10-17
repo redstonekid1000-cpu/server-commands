@@ -1,0 +1,69 @@
+command /windgun:
+    permission: windgun.use
+    trigger:
+        give player a stick named "&bWindcharge Gun"
+        set {windgun.ammo::%uuid of player%} to 10
+        send "&aYou received the &bWindcharge Gun &awith 10 ammo!" to player
+
+on right click with stick:
+    if name of player's tool is "&bWindcharge Gun":
+        if player has permission "windgun.use":
+            if {windgun.cooldown::%uuid of player%} is set:
+                play sound "block.note_block.bass" at player
+                stop
+
+            if {windgun.reload::%uuid of player%} is set:
+                # Reloading in progress, just notify or play sound, no spam
+                if {windgun.reload.message::%uuid of player%} is not set:
+                    send "&cReloading your Windcharge Gun, please wait..." to player
+                    set {windgun.reload.message::%uuid of player%} to true
+                play sound "block.note_block.bass" at player
+                stop
+
+            if {windgun.ammo::%uuid of player%} is not set:
+                set {windgun.ammo::%uuid of player%} to 10
+
+            if {windgun.ammo::%uuid of player%} > 0:
+                subtract 1 from {windgun.ammo::%uuid of player%}
+                send "&bAmmo left: %{windgun.ammo::%uuid of player%}%" to player
+
+                # Arrow velocity and shooting
+                set {_yaw} to yaw of player
+                set {_pitch} to pitch of player
+
+                set {_yawRad} to {_yaw} * -0.01745
+                set {_pitchRad} to {_pitch} * -0.01745
+
+                set {_vx} to cos({_pitchRad}) * sin({_yawRad}) * 2
+                set {_vy} to sin({_pitchRad}) * 2
+                set {_vz} to cos({_pitchRad}) * cos({_yawRad}) * 2
+
+                shoot arrow from player
+                wait 1 tick
+                set {_arrow} to last spawned entity
+
+                set velocity of {_arrow} to vector({_vx}, {_vy}, {_vz})
+                set {windgun.shooter::%uuid of {_arrow}%} to player
+
+                play sound "entity.breeze.shoot" at location of player
+
+                # Cooldown
+                set {windgun.cooldown::%uuid of player%} to true
+                wait 10 ticks
+                delete {windgun.cooldown::%uuid of player%}
+
+                # If ammo just reached 0, start reload process
+                if {windgun.ammo::%uuid of player%} <= 0:
+                    send "&cNo ammo left! Reloading..." to player
+                    set {windgun.reload::%uuid of player%} to true
+                    delete {windgun.reload.message::%uuid of player%}
+
+                    wait 100 ticks
+                    set {windgun.ammo::%uuid of player%} to 10
+                    delete {windgun.reload::%uuid of player%}
+                    delete {windgun.reload.message::%uuid of player%}
+                    send "&aYour &bWindcharge Gun &ahas been reloaded!" to player
+
+            else:
+                # Just in case ammo somehow below 0
+                send "&cNo ammo left! Reloading..." to player
